@@ -1,0 +1,76 @@
+#!/bin/bash
+# VPN Nova core control. Installed root-owned; the app calls it through `sudo -n`.
+set -euo pipefail
+
+DATA="/Library/Application Support/Nova"
+LABEL="com.nova.vpn.core"
+PLIST="$DATA/$LABEL.plist"
+LOG="/Library/Logs/Nova/sing-box.log"
+GUARD="/Library/PrivilegedHelperTools/com.nova.vpn.novaguard"
+OWNER_FILE="$DATA/owner"
+
+[ "$(id -u)" = 0 ] || { echo "novactl: нужен root" >&2; exit 1; }
+
+loaded() { launchctl print "system/$LABEL" >/dev/null 2>&1; }
+
+owner() { cat "$OWNER_FILE"; }
+
+owner_home() { dscl . -read "/Users/$(owner)" NFSHomeDirectory | awk '{print $2}'; }
+
+# The log records which sites and apps were used: root-only, plus read access for the owner (Logs screen).
+secure_log() {
+    [ -f "$LOG" ] || : > "$LOG"
+    for f in "$LOG" "$LOG.1"; do
+        [ -e "$f" ] || continue
+        chown root:wheel "$f"
+        chmod 600 "$f"
+        chmod -N "$f" 2>/dev/null || true
+        chmod +a "user:$(owner) allow read" "$f"
+    done
+}
+
+case "${1:-}" in
+    start)
+        if [ -f "$LOG" ] && [ "$(stat -f %z "$LOG")" -gt 5242880 ]; then mv -f "$LOG" "$LOG.1"; fi
+        secure_log
+        chmod 700 "$DATA/work"
+        if loaded; then launchctl kickstart -k "system/$LABEL"; else launchctl bootstrap system "$PLIST"; fi
+        ;;
+    stop)
+        if loaded; then launchctl bootout "system/$LABEL" || true; fi
+        # bootout returns before the job is gone; wait so an immediate start doesn't race it.
+        for _ in $(seq 1 50); do loaded || break; sleep 0.1; done
+        ;;
+    apply)
+        # The config arrives on stdin (never a user-chosen path), is checked against the allowlist,
+        # then by sing-box. Nothing from the rejected file is echoed back.
+        umask 077
+        NEXT="$DATA/config.next.json"
+        rm -f "$NEXT"
+        head -c 4194304 > "$NEXT"
+        if ! "$GUARD" "$NEXT" "$(owner_home)/Library/Application Support/Nova/rule-sets"; then
+            rm -f "$NEXT"; exit 1
+        fi
+        if ! "$DATA/sing-box" check -c "$NEXT" -D "$DATA/work" >/dev/null 2>&1; then
+            rm -f "$NEXT"; echo "novactl: sing-box отклонил конфиг" >&2; exit 1
+        fi
+        mv -f "$NEXT" "$DATA/config.json"
+        ;;
+    status)
+        if loaded; then
+            launchctl print "system/$LABEL" | awk -F' = ' '/^\tstate = /{print $2} /^\tpid = /{print "pid " $2}'
+        else
+            echo "stopped"
+        fi
+        ;;
+    uninstall)
+        if loaded; then launchctl bootout "system/$LABEL" || true; fi
+        rm -f /etc/sudoers.d/nova-vpn "$GUARD"
+        rm -rf "$DATA" /Library/Logs/Nova
+        rm -f "$0"
+        ;;
+    *)
+        echo "usage: novactl start|stop|apply < config|status|uninstall" >&2
+        exit 2
+        ;;
+esac

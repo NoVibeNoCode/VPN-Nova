@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.nova.vpn.core</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Library/Application Support/Nova/sing-box</string>
+        <string>run</string>
+        <string>-c</string>
+        <string>/Library/Application Support/Nova/config.json</string>
+        <string>-D</string>
+        <string>/Library/Application Support/Nova/work</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <dict>
+        <key>SuccessfulExit</key>
+        <false/>
+    </dict>
+    <key>ThrottleInterval</key>
+    <integer>5</integer>
+    <key>ProcessType</key>
+    <string>Interactive</string>
+    <key>StandardOutPath</key>
+    <string>/Library/Logs/Nova/sing-box.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Library/Logs/Nova/sing-box.log</string>
+</dict>
+</plist>
