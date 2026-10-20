@@ -1,8 +1,8 @@
 # VPN Nova
 
-Бесплатный VPN-клиент для macOS в строке меню. Разные приложения и сайты идут через разные серверы.
+Бесплатный VPN-клиент для macOS (в строке меню) и Windows 11 (в трее). Разные приложения и сайты идут через разные серверы.
 
-*A free macOS menu-bar VPN client with per-app and per-domain routing, built on sing-box. English summary below.*
+*A free VPN client for macOS (menu bar) and Windows 11 (tray) with per-app and per-domain routing, built on sing-box. English summary below.*
 
 ## Что умеет
 
@@ -18,7 +18,21 @@
 
 Требуется macOS 14+ на Apple Silicon.
 
-## Установка
+## Windows 11 (бета)
+
+Порт с теми же возможностями: трей, живая карта, правила по программам и доменам, kill switch. Код — `Windows/` (C#, .NET 10, Avalonia).
+
+> **Бета.** Сборка собрана и проверена автотестами на Mac (самотест ядра, служба через pipe, снимки всех экранов), но на настоящем ПК с Windows ещё не запускалась. Пиши в Issues, если что-то не так.
+
+1. Скачай `VPN-Nova-<версия>-win-x64.zip` из [Releases](../../releases), распакуй куда удобно, запусти `Nova.exe`. Сборка не подписана: SmartScreen → «Подробнее» → «Выполнить в любом случае».
+2. **«Установить службу»** → разрешение администратора (UAC), один раз. Ставится служба Windows `NovaVPN` с ядром sing-box; бинарники копируются в `C:\Program Files\VPN Nova\Service`.
+3. Серверы → ссылка → Импорт, Правила → программы и домены. Включай звездой. Окно закрывается в трей.
+
+Правило по программе срабатывает по имени `.exe` в любой папке (переживает обновления). Служба принимает команды только от пользователя, который её установил (named pipe с ACL), и применяет только конфиг формы Nova (`ConfigGuard`). Проверка на ПК: `Tests\selftest.ps1` и `Tests\tun-test.ps1` (от администратора).
+
+Сборка — на Mac: `Scripts/build-windows.sh` (сам скачает .NET SDK и Go в `vendor/`, кросс-соберёт `sing-box.exe` с тем же патчем). Установщик — `Windows/Installer/nova.iss` (Inno Setup, на Windows).
+
+## Установка (macOS)
 
 1. Скачай `VPN-Nova-<версия>.dmg` из [Releases](../../releases) и перетащи **VPN Nova** в «Программы».
 2. Приложение подписано только ad-hoc (без платного сертификата Apple), поэтому при первом запуске macOS его заблокирует. Открой **Системные настройки → Конфиденциальность и безопасность** и нажми **«Всё равно открыть»**.
@@ -83,5 +97,7 @@ VPN Nova is a free macOS (14+, Apple Silicon) menu-bar client that routes indivi
 - Root part hardening: an allowlist (`NovaGuard`) for configs, stdin-only apply, private logs, root-owned app bundle.
 
 Build: `Scripts/build.sh`, package: `Scripts/make-dmg.sh`, test: `Scripts/test.sh`. The app is ad-hoc signed, so allow it in *System Settings → Privacy & Security* on first launch.
+
+**Windows 11 (beta):** a C#/Avalonia port in `Windows/` with the same features — tray menu, routes map, per-app (by `.exe` name) and per-domain rules, kill switch. The core runs as the `NovaVPN` Windows service (LocalSystem), driven over a named pipe restricted to the installing user, with the same config allowlist. Download the `win-x64` zip from Releases, run `Nova.exe`, click "Установить службу" (one UAC prompt). Cross-built on macOS with `Scripts/build-windows.sh`. Not yet tested on real Windows hardware.
 
 License: GPL-3.0.

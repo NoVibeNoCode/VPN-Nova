@@ -3,3 +3,5 @@
 build/
 vendor/
 releases/
+Windows/**/bin/
+Windows/**/obj/

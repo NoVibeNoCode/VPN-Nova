@@ -1,0 +1,24 @@
+<Project>
+  <!-- Shared by every VPN Nova for Windows project. Versions come from App/VERSION and App/SERVICE_VERSION
+       (one source for macOS and Windows); Scripts/build-windows.sh passes them in. -->
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <InvariantGlobalization>false</InvariantGlobalization>
+    <SatelliteResourceLanguages>ru;en</SatelliteResourceLanguages>
+    <Company>VPN Nova</Company>
+    <Product>VPN Nova</Product>
+    <NovaVersion Condition="'$(NovaVersion)' == ''">dev</NovaVersion>
+    <NovaServiceVersion Condition="'$(NovaServiceVersion)' == ''">dev</NovaServiceVersion>
+    <NovaSingBoxVersion Condition="'$(NovaSingBoxVersion)' == ''">1.14.2-nova.1</NovaSingBoxVersion>
+    <InformationalVersion>$(NovaVersion)</InformationalVersion>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AssemblyMetadata Include="NovaVersion" Value="$(NovaVersion)" />
+    <AssemblyMetadata Include="NovaServiceVersion" Value="$(NovaServiceVersion)" />
+    <AssemblyMetadata Include="NovaSingBoxVersion" Value="$(NovaSingBoxVersion)" />
+  </ItemGroup>
+</Project>

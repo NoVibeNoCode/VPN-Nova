@@ -37,8 +37,24 @@ for p in "$ROOT"/App/Patches/sing-box-*.patch; do
     echo "  ✓ $(basename "$p")"
 done
 
+export GOPATH="$VENDOR/gopath" GOCACHE="$VENDOR/gocache" GOTOOLCHAIN=local
+
+# `build-core.sh windows-amd64|windows-arm64` cross-compiles the Windows core (wintun is embedded
+# in sing-tun, so sing-box.exe is the whole core) → vendor/<target>/sing-box.exe.
+if [[ "${1:-}" == windows-* ]]; then
+    ARCH="${1#windows-}"
+    OUT="$VENDOR/$1/sing-box.exe"
+    mkdir -p "$VENDOR/$1"
+    echo "→ go build ($1)"
+    (cd "$SRC" && GOOS=windows GOARCH="$ARCH" CGO_ENABLED=0 "$GO" build -trimpath -tags "$TAGS" \
+        -ldflags "-s -w -X github.com/sagernet/sing-box/constant.Version=$NOVA_VERSION" \
+        -o "$OUT" ./cmd/sing-box)
+    echo "✓ $OUT ($NOVA_VERSION)"
+    exit 0
+fi
+
 echo "→ go build"
-export GOPATH="$VENDOR/gopath" GOCACHE="$VENDOR/gocache" GOTOOLCHAIN=local CGO_ENABLED=1
+export CGO_ENABLED=1
 (cd "$SRC" && "$GO" build -trimpath -tags "$TAGS" \
     -ldflags "-s -w -X github.com/sagernet/sing-box/constant.Version=$NOVA_VERSION" \
     -o "$VENDOR/sing-box" ./cmd/sing-box) 2>&1 | grep -v 'duplicate libraries' || true
